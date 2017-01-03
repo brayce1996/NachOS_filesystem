@@ -36,5 +36,44 @@ int SysCreate(char *filename)
 }
 #endif
 
+#ifndef FILESYS_STUB
+int SysCreate(char *filename, int initSize)
+{
+	// return value
+	// 1: success
+	// 0: failed
+	return kernel->interrupt->CreateFile(filename,initSize);
+}
+
+int SysOpen(char *filename)
+{
+	return kernel->interrupt->OpenFile(filename);
+}
+
+int SysClose(int fd)
+{
+	return kernel->interrupt->CloseFile(fd);
+}
+
+int SysWrite(char *buf, int size, int fd)
+{
+	return kernel->interrupt->WriteFile(buf, size, fd);
+}
+
+int SysRead(char *buf, int size, int fd)
+{
+	return kernel->interrupt->ReadFile(buf, size, fd);
+}
+
+int SysRemove(char *filename)
+{
+	return kernel->interrupt->RemoveFile(filename);
+}
+
+int SysSeek(int position, OpenFileId id)
+{
+	return kernel->interrupt->SeekFile(position, id);
+}
+#endif
 
 #endif /* ! __USERPROG_KSYSCALL_H__ */

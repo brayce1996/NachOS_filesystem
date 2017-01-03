@@ -88,6 +88,11 @@ class FileSystem {
 
     void Print();			// List all the files and their contents
 
+    int Read(char *buf, int size, int fd);
+    int Write(char *buf, int size, int fd);
+    int Seek(int position,int fd);
+    int Close(int fd);
+
   private:
    OpenFile* freeMapFile;		// Bit map of free disk blocks,
 					// represented as a file

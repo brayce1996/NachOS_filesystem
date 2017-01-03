@@ -191,7 +191,6 @@
 # of "-DSIM_FIX" to the DEFINES.  This should be enabled by default
 # and eventually will not require the symbol definition
 ################################################################
-DEFINES =  -DRDATA -DSIM_FIX
 #DEFINES =  -DFILESYS_STUB -DRDATA -DSIM_FIX
 
 
@@ -201,7 +200,7 @@ DEFINES =  -DRDATA -DSIM_FIX
 # break the thread system.  You might want to use -fno-inline if
 # you need to call some inline functions from the debugger.
 
-CFLAGS = -g -Wall $(INCPATH) $(DEFINES) $(HOSTCFLAGS) -DCHANGED -m32
+CFLAGS = -g -Wall $(INCPATH) $(DEFINES) $(HOSTCFLAGS) -DCHANGED -m32 -fpermissive
 LDFLAGS = -m32
 CPP_AS_FLAGS= -m32
 

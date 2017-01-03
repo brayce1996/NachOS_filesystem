@@ -255,6 +255,44 @@ Interrupt::CreateFile(char *filename)
 }
 #endif
 
+#ifndef FILESYS_STUB
+int
+Interrupt::CreateFile(char *filename, int initSize)
+{
+    return kernel->CreateFile(filename,initSize);
+}
+
+int Interrupt::OpenFile(char *filename)
+{
+    return kernel->Open(filename);
+}
+
+int Interrupt::ReadFile(char *buf, int size, int fd)
+{
+    return kernel->ReadFile(buf, size, fd);
+}
+
+int Interrupt::WriteFile(char *buf, int size, int fd)
+{
+    return kernel->WriteFile(buf, size, fd);
+}
+
+int Interrupt::CloseFile(int fd)
+{
+    return kernel->CloseFile(fd);
+}
+
+int Interrupt::SeekFile(int position,int fd)
+{
+    return kernel->CloseFile(position,fd);
+}
+
+int Interrupt::RemoveFile(char *filename)
+{
+    return kernel->CloseFile(filename);
+}
+#endif
+
 //----------------------------------------------------------------------
 // Interrupt::Schedule
 // 	Arrange for the CPU to be interrupted when simulated time

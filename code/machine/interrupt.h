@@ -99,6 +99,16 @@ class Interrupt {
 	int CreateFile(char *filename);
 	#endif 
 
+    #ifndef FILESYS_STUB
+    int CreateFile(char *filename,int initSize);
+    int OpenFile(char *filename);
+    int ReadFile(char *buf, int size ,int fd);
+    int WriteFile(char *buf, int size, int fd);
+    int CloseFile(int fd);
+    int SeekFile(int position,int fd);
+    int RemoveFile(char *filename);
+    #endif 
+
     void YieldOnReturn();	// cause a context switch on return 
 				// from an interrupt handler
 

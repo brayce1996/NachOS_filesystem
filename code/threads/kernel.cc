@@ -336,3 +336,48 @@ int Kernel::CreateFile(char *filename)
 }
 #endif
 
+#ifndef FILESYS_STUB
+int Kernel::CreateFile(char *filename, int initSize)
+{
+    return fileSystem->Create(filename,initSize);
+}
+int Kernel::Open(char *filename)
+{
+    OpenFile *opFile = fileSystem->Open(filename);
+
+    if(opFile==NULL)
+        return -1;
+    else
+    {
+        //cout << "kernel:open : " << opFile->GetFd()<<endl;
+        return opFile->GetFd();
+    }
+}
+
+
+int Kernel::CloseFile(int fd)
+{
+    return fileSystem->Close(fd);
+}
+
+int Kernel::ReadFile(char *buf, int size, int fd)
+{
+    return fileSystem->Read(buf,size,fd);
+}
+
+int Kernel::WriteFile(char *buf, int size, int fd)
+{
+    return fileSystem->Write(buf,size,fd);
+}
+
+int Kernel::SeekFile(int position, int fd)
+{
+    return fileSystem->Seek(position,fd);
+}
+
+int Kernel::RemoveFile(char *filename)
+{
+    return fileSystem->Remove(filename);
+}
+
+#endif
