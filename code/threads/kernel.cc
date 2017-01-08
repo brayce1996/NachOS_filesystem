@@ -350,7 +350,8 @@ int Kernel::Open(char *filename)
     else
     {
         //cout << "kernel:open : " << opFile->GetFd()<<endl;
-        return opFile->GetFd();
+        //return opFile->GetFd();
+        return 1; //dummy return.
     }
 }
 
