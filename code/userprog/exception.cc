@@ -129,7 +129,8 @@ ExceptionHandler(ExceptionType which)
 					{
 						char *filename = &(kernel->machine->mainMemory[val]);
 						OpenFileId fd = (OpenFileId)SysOpen(filename);
-						//cout << "execption.cc:SC_Open : fd = "<< fd << endl;
+					  DEBUG(dbgMp4, "SC_Open: open file fd="<<fd);
+					val = kernel->machine->ReadRegister(4);
 						kernel->machine->WriteRegister(2, fd);
 					}
 					kernel->machine->WriteRegister(PrevPCReg, kernel->machine->ReadRegister(PCReg));

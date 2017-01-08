@@ -196,4 +196,16 @@ OpenFile::Length()
     return hdr->FileLength(); 
 }
 
+int
+OpenFile::GetFd()
+{
+    return hdr->GetFd();
+}
+
+int
+OpenFile::SetFd(int fd)
+{
+   return hdr->SetFd(fd);
+}
+
 #endif //FILESYS_STUB

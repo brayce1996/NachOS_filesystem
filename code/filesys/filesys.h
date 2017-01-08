@@ -66,6 +66,9 @@ class FileSystem {
 };
 
 #else // FILESYS
+  
+#define SYS_MAX_OPEN_FILE_NUM 30
+
 class FileSystem {
   public:
     FileSystem(bool format);		// Initialize the file system.
@@ -91,13 +94,19 @@ class FileSystem {
     int Read(char *buf, int size, int fd);
     int Write(char *buf, int size, int fd);
     int Seek(int position,int fd);
+    bool GetSysFd(int *fdOut);
     int Close(int fd);
+    void SetOpenFileTable(int fd, OpenFile *openFile);
+    OpenFile* GetOpenFileTable(int fd);
 
   private:
    OpenFile* freeMapFile;		// Bit map of free disk blocks,
 					// represented as a file
    OpenFile* directoryFile;		// "Root" directory -- list of 
-					// file names, represented as a file
+					// file names, represented as a FILESYS
+   map<int, OpenFile*> sysOpFileTable;
+   //OpenFile* sysOpenFileTable[SYS_MAX_OPEN_FILE_NUM];
+   int fdPosition;
 };
 
 #endif // FILESYS

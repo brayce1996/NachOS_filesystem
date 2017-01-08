@@ -341,17 +341,22 @@ int Kernel::CreateFile(char *filename, int initSize)
 {
     return fileSystem->Create(filename,initSize);
 }
+//---------------------------------
+//
+// return a file descriptor in system-wide table
+//---------------------------------
 int Kernel::Open(char *filename)
 {
     OpenFile *opFile = fileSystem->Open(filename);
 
-    if(opFile==NULL)
-        return -1;
-    else
-    {
-        //cout << "kernel:open : " << opFile->GetFd()<<endl;
-        return opFile->GetFd();
+    if(opFile){
+      int fd = opFile->GetFd();
+      fileSystem->SetOpenFileTable(fd,opFile);
+      
+      return fd;
     }
+
+    return -1; 
 }
 
 

@@ -57,7 +57,8 @@ class FileHeader {
 
     int FileLength();			// Return the length of the file 
 					// in bytes
-
+    int GetFd();
+    int SetFd(int fd);
     void Print();			// Print the contents of the file.
 
   private:
@@ -79,6 +80,7 @@ class FileHeader {
 	
     int numBytes;			// Number of bytes in the file
     int numSectors;			// Number of data sectors in the file
+    int fileDescriptor;
     int dataSectors[NumDirect];		// Disk sector numbers for each data 
 					// block in the file
 };

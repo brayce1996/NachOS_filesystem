@@ -86,7 +86,7 @@ FileSystem::FileSystem(bool format)
 		Directory *directory = new Directory(NumDirEntries);
 		FileHeader *mapHdr = new FileHeader;
 		FileHeader *dirHdr = new FileHeader;
-
+    int i = 0;
 		DEBUG(dbgFile, "Formatting the file system.");
 
 		// First, allocate space for FileHeaders for the directory and bitmap
@@ -130,6 +130,10 @@ FileSystem::FileSystem(bool format)
 			freeMap->Print();
 			directory->Print();
 		}
+    /*
+    for(i=0;i<SYS_MAX_OPEN_FILE_NUM;i++){
+      sysOpenFileTable[i] = NULL;
+    }*/
 		delete freeMap; 
 		delete directory; 
 		delete mapHdr; 
@@ -233,19 +237,30 @@ FileSystem::Create(char *name, int initialSize)
 //	"name" -- the text name of the file to be opened
 //----------------------------------------------------------------------
 
-	OpenFile *
+OpenFile *
 FileSystem::Open(char *name)
 { 
 	Directory *directory = new Directory(NumDirEntries);
 	OpenFile *openFile = NULL;
 	int sector;
-
+  int fd = -1;
 	DEBUG(dbgFile, "Opening file" << name);
 	directory->FetchFrom(directoryFile);
 	sector = directory->Find(name); 
-	if (sector >= 0) 		
+  // TODO: allocate a new entry in system-wide table[done]
+	if (sector >= 0){		
+
 		openFile = new OpenFile(sector);	// name was found in directory 
-	delete directory;
+    if(GetSysFd(&fd)){
+       openFile->SetFd(fd);
+       DEBUG(dbgMp4, "Open file in FileSystem::Open,"<< "name="<<name<<",fd="<<fd);
+    }
+    else{
+        delete openFile;
+        openFile = NULL;
+    }
+  }
+  delete directory;
 	return openFile;				// return NULL if not found
 }
 
@@ -349,12 +364,24 @@ FileSystem::Print()
 
 int 
 FileSystem::Read(char *buf, int size, int fd){
-	return 1;
+  OpenFile *opFile = GetOpenFileTable(fd);
+  
+  if(opFile){
+     return opFile->Read(buf,size);
+  }
+	return -1;
 }
 
 int 
 FileSystem::Write(char *buf, int size, int fd){
-	return 1;
+	  
+  OpenFile *opFile = GetOpenFileTable(fd);
+  
+  if(opFile){
+     return opFile->Write(buf,size);
+  }
+
+  return -1;
 }
 
 int 
@@ -364,9 +391,42 @@ FileSystem::Seek(int position,int fd){
 
 int 
 FileSystem::Close(int fd){
+  
+  OpenFile *opFile = GetOpenFileTable(fd);
+  
+  //SetOpenFileTable(fd,NULL);
+  sysOpFileTable.erase(fd);
+  delete opFile;
 	return 1;
 }
 
 
+bool FileSystem::GetSysFd(int *fdout){
+
+     int i = 0;
+     int fd = fdPosition;
+     OpenFile *opFile = NULL;
+     while(i<SYS_MAX_OPEN_FILE_NUM){
+         fd = (fd+i)%SYS_MAX_OPEN_FILE_NUM;
+         opFile = sysOpFileTable[fd];
+         if(opFile==NULL){
+             *fdout = fd;
+             fdPosition = (fd+1);// assume next one is free
+             return TRUE;
+         }
+         i++;
+     }
+
+     return FALSE;
+}
+
+void FileSystem::SetOpenFileTable(int fd, OpenFile *openFile){
+      sysOpFileTable[fd] = openFile;
+}
+
+OpenFile* FileSystem::GetOpenFileTable(int fd){
+     
+     return sysOpFileTable[fd];
+}
 
 #endif // FILESYS_STUB

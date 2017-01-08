@@ -108,12 +108,12 @@ AddrSpace::Load(char *fileName)
     OpenFile *executable = kernel->fileSystem->Open(fileName);
     NoffHeader noffH;
     unsigned int size;
-
     if (executable == NULL) {
 	cerr << "Unable to open file " << fileName << "\n";
 	return FALSE;
     }
-
+    
+    
     executable->ReadAt((char *)&noffH, sizeof(noffH), 0);
     if ((noffH.noffMagic != NOFFMAGIC) && 
 		(WordToHost(noffH.noffMagic) == NOFFMAGIC))
@@ -168,7 +168,7 @@ AddrSpace::Load(char *fileName)
 			noffH.readonlyData.size, noffH.readonlyData.inFileAddr);
     }
 #endif
-
+ 
     delete executable;			// close file
     return TRUE;			// success
 }

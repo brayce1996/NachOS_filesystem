@@ -284,7 +284,7 @@ int Interrupt::CloseFile(int fd)
 
 int Interrupt::SeekFile(int position,int fd)
 {
-    return kernel->CloseFile(position,fd);
+   // return kernel->CloseFile(position,fd);
 }
 
 int Interrupt::RemoveFile(char *filename)

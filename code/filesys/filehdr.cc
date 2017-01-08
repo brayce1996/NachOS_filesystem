@@ -168,6 +168,17 @@ FileHeader::FileLength()
     return numBytes;
 }
 
+int FileHeader::GetFd()
+{
+    return fileDescriptor;
+}
+
+int FileHeader::SetFd(int fd)
+{
+    fileDescriptor = fd;
+    return fileDescriptor;
+}
+
 //----------------------------------------------------------------------
 // FileHeader::Print
 // 	Print the contents of the file header, and the contents of all
