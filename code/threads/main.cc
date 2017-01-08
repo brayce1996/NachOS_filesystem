@@ -155,7 +155,7 @@ Print(char *name)
 static void
 CreateDirectory(char *name)
 {
-	// MP4 Assignment
+	kernel->fileSystem->Create(name,256);
 }
 
 //----------------------------------------------------------------------
@@ -318,7 +318,7 @@ main(int argc, char **argv)
 		kernel->fileSystem->Print();
     }
     if (dirListFlag) {
-		kernel->fileSystem->List();
+		kernel->fileSystem->List(listDirectoryName);
     }
 	if (mkdirFlag) {
 		// MP4 mod tag

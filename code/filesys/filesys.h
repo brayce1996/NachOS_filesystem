@@ -36,6 +36,7 @@
 #include "copyright.h"
 #include "sysdep.h"
 #include "openfile.h"
+#include <vector>
 
 #ifdef FILESYS_STUB 		// Temporarily implement file system calls as 
 				// calls to UNIX, until the real file system
@@ -85,6 +86,7 @@ class FileSystem {
     bool Remove(char *name);  		// Delete a file (UNIX unlink)
 
     void List();			// List all the files in the file system
+    void List(char* path);
 
     void Print();			// List all the files and their contents
 
@@ -94,6 +96,13 @@ class FileSystem {
     int Close(int fd);
 
   private:
+	std::vector<char*>& PreprocessPath(char* path, std::vector<char*>& pathQueue);
+	bool IsDir(char* name);
+
+	void CleanQueue(vector<char*>& queue);
+
+	OpenFile * GoDirectory(char** name);
+
    OpenFile* freeMapFile;		// Bit map of free disk blocks,
 					// represented as a file
    OpenFile* directoryFile;		// "Root" directory -- list of 
