@@ -53,7 +53,7 @@ class Kernel {
 	#endif
 
     #ifndef FILESYS_STUB 
-    int CreateFile(char* filename,int initSize); // fileSystem call
+    int CreateFile(char* filename,initSize); // fileSystem call
     int Open(char *filename);
     int CloseFile(int fd);
     int WriteFile(char *buf, int size, int fd);

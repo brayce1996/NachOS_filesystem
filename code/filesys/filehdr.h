@@ -61,6 +61,7 @@ class FileHeader {
     void Print();			// Print the contents of the file.
 
   private:
+	
 	/*
 		MP4 hint:
 		You will need a data structure to store more information in a header.

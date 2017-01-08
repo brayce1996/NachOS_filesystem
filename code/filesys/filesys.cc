@@ -51,7 +51,6 @@
 #include "directory.h"
 #include "filehdr.h"
 #include "filesys.h"
-#include <map>
 
 // Sectors containing the file headers for the bitmap of free sectors,
 // and the directory of files.  These file headers are placed in well-known 
@@ -141,9 +140,6 @@ FileSystem::FileSystem(bool format)
 		freeMapFile = new OpenFile(FreeMapSector);
 		directoryFile = new OpenFile(DirectorySector);
 	}
-
-	//systemOpenFileTable = new std::map<int, OpenFile*>();
-	FdCounter = 0;
 }
 
 //----------------------------------------------------------------------
@@ -154,7 +150,6 @@ FileSystem::~FileSystem()
 {
 	delete freeMapFile;
 	delete directoryFile;
-	//delete systemOpenFileTable;
 }
 
 //----------------------------------------------------------------------
@@ -248,13 +243,8 @@ FileSystem::Open(char *name)
 	DEBUG(dbgFile, "Opening file" << name);
 	directory->FetchFrom(directoryFile);
 	sector = directory->Find(name); 
-	if (sector >= 0){
+	if (sector >= 0) 		
 		openFile = new OpenFile(sector);	// name was found in directory 
-		openFile->setFD(FdCounter);
-		systemOpenFileTable[FdCounter] = openFile;
-		FdCounter++;
-	}
-
 	delete directory;
 	return openFile;				// return NULL if not found
 }
@@ -359,28 +349,21 @@ FileSystem::Print()
 
 int 
 FileSystem::Read(char *buf, int size, int fd){
-	OpenFile *openFile = systemOpenFileTable[fd];
-	return openFile->Read(buf,size);
+	return 1;
 }
 
 int 
 FileSystem::Write(char *buf, int size, int fd){
-	OpenFile *openFile = systemOpenFileTable[fd];
-	return openFile->Write(buf,size);
+	return 1;
 }
 
 int 
 FileSystem::Seek(int position,int fd){
-	OpenFile *openFile = systemOpenFileTable[fd];
-	openFile->Seek(position);
 	return 1;
 }
 
 int 
 FileSystem::Close(int fd){
-	OpenFile *openFile = systemOpenFileTable[fd];
-	systemOpenFileTable.erase(fd);
-	//delete openFile;
 	return 1;
 }
 

@@ -86,14 +86,10 @@ class OpenFile {
 					// file (this interface is simpler 
 					// than the UNIX idiom -- lseek to 
 					// end of file, tell, lseek back 
-
-    int getFD(){return fd;}
-    void setFD(int fd){this->fd = fd;}
+    
   private:
     FileHeader *hdr;			// Header for this file 
     int seekPosition;			// Current position within the file
-
-    int fd;
 };
 
 #endif // FILESYS

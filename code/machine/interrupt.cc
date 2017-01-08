@@ -284,12 +284,12 @@ int Interrupt::CloseFile(int fd)
 
 int Interrupt::SeekFile(int position,int fd)
 {
-    return kernel->SeekFile(position,fd);
+    return kernel->CloseFile(position,fd);
 }
 
 int Interrupt::RemoveFile(char *filename)
 {
-    return kernel->RemoveFile(filename);
+    return kernel->CloseFile(filename);
 }
 #endif
 
