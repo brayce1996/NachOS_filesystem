@@ -73,15 +73,40 @@ FileHeader::Allocate(PersistentBitmap *freeMap, int fileSize)
     numSectors  = divRoundUp(fileSize, SectorSize);
     if (freeMap->NumClear() < numSectors)
 	return FALSE;		// not enough space
+    
+    //numInDir = umSectors/NumInDirect;
+    //numSectors = numSectors % NumInDirect;
+    if(numSectors>NumDirect)
+      numInDir = divRoundUp(numSectors, NumInDirect);
+    
+    if(freeMap->NumClear()<(numSectors+numInDir))
+      return FALSE;
 
-    for (int i = 0; i < numSectors; i++) {
-	dataSectors[i] = freeMap->FindAndSet();
-	// since we checked that there was enough free space,
-	// we expect this to succeed
-	ASSERT(dataSectors[i] >= 0);
+    if(numInDir>0){
+        int fillSectorNum = 0;
+        indirectTable *indirTbl = new indirectTable;
+        for(int i = 0; i<numInDir; i++){
+            dataSectors[i] = freeMap->FindAndSet();
+	          memset(indirTbl, -1, sizeof(indirectTable));  // dummy operation to keep valgrind happy
+            for(int j = 0; (j<NumInDirect)&&(fillSectorNum<numSectors); j++){
+               indirTbl->dataSectors[j] = freeMap->FindAndSet();
+               fillSectorNum++;
+            } 
+            kernel->synchDisk->WriteSector(dataSectors[i], (char *)indirTbl); 
+
+        }
+        delete indirTbl;
+    }else{
+        for (int i = 0; i < numSectors; i++) {
+	          dataSectors[i] = freeMap->FindAndSet();
+	          // since we checked that there was enough free space,
+	          // we expect this to succeed
+	          ASSERT(dataSectors[i] >= 0);
+        }
     }
     return TRUE;
 }
+
 
 //----------------------------------------------------------------------
 // FileHeader::Deallocate
@@ -93,10 +118,27 @@ FileHeader::Allocate(PersistentBitmap *freeMap, int fileSize)
 void 
 FileHeader::Deallocate(PersistentBitmap *freeMap)
 {
-    for (int i = 0; i < numSectors; i++) {
-	ASSERT(freeMap->Test((int) dataSectors[i]));  // ought to be marked!
-	freeMap->Clear((int) dataSectors[i]);
-    }
+   if(numInDir>0){
+   int tmpNumSector = 0;
+   
+   indirectTable *indirTbl = new indirectTable;
+   for (int j=0;j<numInDir;j++){  
+	    memset(indirTbl, -1, sizeof(indirectTable));  // dummy operation to keep valgrind happy
+      kernel->synchDisk->ReadSector(dataSectors[j], (char *)indirTbl);
+      for (int i = 0; (i < NumInDirect)&&(tmpNumSector<numSectors); i++) {
+	        ASSERT(freeMap->Test((int) indirTbl->dataSectors[i]));  // ought to be marked!
+	        freeMap->Clear((int) indirTbl->dataSectors[i]);
+      }
+	    freeMap->Clear((int) dataSectors[j]);
+   }
+   delete indirTbl;
+   }else{
+      for (int i = 0; (i < numSectors); i++) {
+	        ASSERT(freeMap->Test((int)dataSectors[i]));  // ought to be marked!
+	        freeMap->Clear((int) dataSectors[i]);
+      }
+   
+   }
 }
 
 //----------------------------------------------------------------------
@@ -154,7 +196,20 @@ FileHeader::WriteBack(int sector)
 int
 FileHeader::ByteToSector(int offset)
 {
-    return(dataSectors[offset / SectorSize]);
+  int  sector = -1;
+  if(numInDir>0){
+       int numSec = offset/SectorSize; 
+       int numIndr = numSec/NumInDirect;
+       int secOffset = numSec%NumInDirect;
+       indirectTable *indirTbl = new indirectTable;
+       kernel->synchDisk->ReadSector(dataSectors[numIndr], (char *)indirTbl);
+       sector = indirTbl->dataSectors[secOffset];
+       delete indirTbl;
+   }else{
+        sector=(dataSectors[offset / SectorSize]);
+   }
+
+  return sector;
 }
 
 //----------------------------------------------------------------------
@@ -190,7 +245,20 @@ FileHeader::Print()
 {
     int i, j, k;
     char *data = new char[SectorSize];
-
+/*
+    int tmpNumSector = 0;
+  indirectTable *indirTbl = new indirectTable;
+   for (int j=0;j<numInDir;j++){  
+	    memset(indirTbl, -1, sizeof(indirectTable));  // dummy operation to keep valgrind happy
+      kernel->synchDisk->ReadSector(dataSectors[j], (char *)indirTbl);
+      for (int i = 0; (i < NumInDirect)&&(tmpNumSector<numSectors); i++) {
+	        ASSERT(freeMap->Test((int) indirTbl->dataSectors[i]));  // ought to be marked!
+	        freeMap->Clear((int) indirTbl->dataSectors[i]);
+      }
+	    freeMap->Clear((int) dataSectors[j]);
+   }
+   delete indirTbl;
+*/
     printf("FileHeader contents.  File size: %d.  File blocks:\n", numBytes);
     for (i = 0; i < numSectors; i++)
 	printf("%d ", dataSectors[i]);
