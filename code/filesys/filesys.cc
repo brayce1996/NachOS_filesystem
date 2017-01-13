@@ -51,6 +51,7 @@
 #include "directory.h"
 #include "filehdr.h"
 #include "filesys.h"
+#include <vector>
 
 // Sectors containing the file headers for the bitmap of free sectors,
 // and the directory of files.  These file headers are placed in well-known 
@@ -197,8 +198,10 @@ FileSystem::Create(char *name, int initialSize)
 
 	DEBUG(dbgFile, "Creating file " << name << " size " << initialSize);
 
+	OpenFile * dirFile = GoDirectory(&name);
+
 	directory = new Directory(NumDirEntries);
-	directory->FetchFrom(directoryFile);
+	directory->FetchFrom(dirFile);
 
 	if (directory->Find(name) != -1)
 		success = FALSE;			// file is already in directory
@@ -216,14 +219,25 @@ FileSystem::Create(char *name, int initialSize)
 			else {	
 				success = TRUE;
 				// everthing worked, flush all changes back to disk
-				hdr->WriteBack(sector); 		
-				directory->WriteBack(directoryFile);
+				hdr->WriteBack(sector);
+				directory->WriteBack(dirFile);
+				if(IsDir(name)){	//format subdir
+					OpenFile * newDirFile = new OpenFile(sector);
+					Directory * newDir = new Directory(NumDirEntries);
+
+					newDir->WriteBack(newDirFile); // write back a empty table to the dir file = format
+					delete newDir;
+					delete newDirFile;
+				}
+				if(dirFile != directoryFile) delete dirFile; //root dir file should keep opening
+
 				freeMap->WriteBack(freeMapFile);
 			}
 			delete hdr;
 		}
 		delete freeMap;
 	}
+
 	delete directory;
 	return success;
 }
@@ -246,7 +260,17 @@ FileSystem::Open(char *name)
 	int sector;
   int fd = -1;
 	DEBUG(dbgFile, "Opening file" << name);
-	directory->FetchFrom(directoryFile);
+
+
+	OpenFile* dirFile = GoDirectory(&name);
+	directory->FetchFrom(dirFile);
+	if(dirFile != directoryFile) delete dirFile; //root dir file should keep opening
+
+	if(name==NULL || IsDir(name)) {
+		std::cout<<"FileSystem::Open : Bad open path."<<std::endl;
+		if(name!=NULL) delete name;
+		return NULL;
+	}
 	sector = directory->Find(name); 
   // TODO: allocate a new entry in system-wide table[done]
 	if (sector >= 0){		
@@ -320,12 +344,22 @@ FileSystem::Remove(char *name)
 FileSystem::List()
 {
 	Directory *directory = new Directory(NumDirEntries);
-
 	directory->FetchFrom(directoryFile);
 	directory->List();
 	delete directory;
 }
 
+	void
+FileSystem::List(char* path,bool recursiveListFlag)
+{
+	Directory *directory = new Directory(NumDirEntries);
+	OpenFile * dirFile = GoDirectory(&path);
+	directory->FetchFrom(dirFile);
+	if(dirFile!=directoryFile) delete dirFile;
+	if(recursiveListFlag) directory->List(0);
+	else directory->List();
+	delete directory;
+}
 //----------------------------------------------------------------------
 // FileSystem::Print
 // 	Print everything about the file system:
@@ -401,7 +435,6 @@ FileSystem::Close(int fd){
 	return 1;
 }
 
-
 bool FileSystem::GetSysFd(int *fdout){
 
      int i = 0;
@@ -428,6 +461,71 @@ void FileSystem::SetOpenFileTable(int fd, OpenFile *openFile){
 OpenFile* FileSystem::GetOpenFileTable(int fd){
      
      return sysOpFileTable[fd];
+}
+
+std::vector<char*>& FileSystem::PreprocessPath(char* path, std::vector<char*>& pathQueue){
+	const int NAME_SIZE = 255;
+	char *name = NULL;
+
+
+	for(int i=0, pre_i = 0;i<strlen(path);i++){
+		if(i==pre_i) 
+			name = new char[NAME_SIZE];		//NOTICE: you should delete this yourself after used.
+
+
+		name[i-pre_i] = path[i];
+		if(path[i]=='/'||i+1==strlen(path)) {
+			name[i-pre_i+1] = '\0';
+			pathQueue.push_back(name);
+			pre_i = i+1;
+		}
+	}
+}
+
+bool FileSystem::IsDir(char* name){
+	return (name[strlen(name)-1] == '/');
+}
+
+void FileSystem::CleanQueue(std::vector<char*>& queue){
+	while(!queue.empty()){
+		char * toBeDelete = queue.front();
+		queue.erase(queue.begin());
+		delete toBeDelete;
+	}
+}
+
+OpenFile * FileSystem::GoDirectory(char** name){
+	std::vector<char*> pathQueue;
+	PreprocessPath(*name,pathQueue);
+	OpenFile * dirFile = NULL;
+	Directory* directory = new Directory(NumDirEntries);
+
+	while(!pathQueue.empty()){
+		*name = pathQueue.front();
+		pathQueue.erase(pathQueue.begin()); 	//pop_front
+
+		if(strcmp(*name,"/")==0){				//root dir
+			directory->FetchFrom(directoryFile);
+			dirFile = directoryFile;
+		}else if(IsDir(*name)){		//sub dir
+			int subDirSector = directory->Find(*name);
+			if(subDirSector==-1) {
+				ASSERT(pathQueue.empty());		//this dir is not exist,
+												// and the path access it's child
+												// bad request, terminate the system.
+				break; //not exist, going to be create.
+			}
+			if(dirFile != directoryFile) delete dirFile;	// delete last dir file
+			// BUT! if last dir is root , do nothing.
+			dirFile = new OpenFile(subDirSector);
+			directory->FetchFrom(dirFile);
+		}else{	//this is a file
+			ASSERT(pathQueue.empty());	// path should be the last file
+			break;
+		}
+		delete *name;
+	}
+	return dirFile;
 }
 
 #endif // FILESYS_STUB

@@ -155,8 +155,20 @@ Print(char *name)
 static void
 CreateDirectory(char *name)
 {
-	// MP4 Assignment
+	kernel->fileSystem->Create(name,256);
+
+    //if(name!=NULL) delete name;
 }
+
+static char* TransferName(char * name){
+    if(name[strlen(name)-1]=='/') return name;
+
+    char * transferName = new char[strlen(name)+1];
+    sprintf(transferName,"%s/",name);
+
+    return transferName;
+}
+
 
 //----------------------------------------------------------------------
 // main
@@ -250,6 +262,8 @@ main(int argc, char **argv)
 		// MP4 mod tag
 		ASSERT(i + 1 < argc);
 		listDirectoryName = argv[i + 1];
+        listDirectoryName = TransferName(listDirectoryName);
+
 		dirListFlag = true;
 		i++;
 	}
@@ -258,6 +272,8 @@ main(int argc, char **argv)
 		// recursive list
 		ASSERT(i + 1 < argc);
 		listDirectoryName = argv[i + 1];
+        listDirectoryName = TransferName(listDirectoryName);
+
 		dirListFlag = true;
 		recursiveListFlag = true;
 		i++;
@@ -266,6 +282,7 @@ main(int argc, char **argv)
 		// MP4 mod tag
 		ASSERT(i + 1 < argc);
 		createDirectoryName = argv[i + 1];
+        createDirectoryName = TransferName(createDirectoryName);
 		mkdirFlag = true;
 		i++;
 	}
@@ -318,10 +335,11 @@ main(int argc, char **argv)
 		kernel->fileSystem->Print();
     }
     if (dirListFlag) {
-		kernel->fileSystem->List();
+		kernel->fileSystem->List(listDirectoryName,recursiveListFlag);
     }
 	if (mkdirFlag) {
 		// MP4 mod tag
+
 		CreateDirectory(createDirectoryName);
 	}
     if (printFileName != NULL) {

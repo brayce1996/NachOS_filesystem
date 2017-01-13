@@ -355,7 +355,6 @@ int Kernel::Open(char *filename)
       
       return fd;
     }
-
     return -1; 
 }
 
