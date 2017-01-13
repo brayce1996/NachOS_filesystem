@@ -77,6 +77,7 @@ FileHeader::Allocate(PersistentBitmap *freeMap, int fileSize)
 		DEBUG(dbgFile, "numSectors = "<< numSectors);
     
     indirectTable *indirTbl = new indirectTable;
+	  memset(indirTbl, -1, sizeof(indirectTable));  // dummy operation to keep valgrind happy
 	  dataSectors[0] = freeMap->FindAndSet();
     numLevel = (int)(log10(numSectors)/log10(32))+1; //see how many indirect level file need
 		DEBUG(dbgFile, "nLevel = "<<numLevel<<", allocSecNum="<<allocSecNum);
