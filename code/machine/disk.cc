@@ -135,10 +135,10 @@ Disk::WriteRequest(int sectorNumber, char* data)
 {
     int ticks = ComputeLatency(sectorNumber, TRUE);
 
+    DEBUG(dbgDisk, "Writing to sector " << sectorNumber);
     ASSERT(!active);
     ASSERT((sectorNumber >= 0) && (sectorNumber < NumSectors));
     
-    DEBUG(dbgDisk, "Writing to sector " << sectorNumber);
     Lseek(fileno, SectorSize * sectorNumber + MagicSize, 0);
     WriteFile(fileno, data, SectorSize);
     if (debug->IsEnabled('d'))

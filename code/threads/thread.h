@@ -51,6 +51,7 @@
 // For simplicity, I just take the maximum over all architectures.
 
 #define MachineStateSize 75 
+#define THREAD_MAX_OPEN_FILE_NUM 10
 
 
 // Size of the thread's private execution stack.
@@ -97,6 +98,9 @@ class Thread {
 				// relinquish the processor
     void Begin();		// Startup code for the thread	
     void Finish();  		// The thread is done executing
+    bool GetAvlEntry(int *fdOut);
+    int GetOpFileTable(int fdThread);
+    int SetOpFileTable(int fdSys,int fdThread);
     
     void CheckOverflow();   	// Check if thread stack has overflowed
     void setStatus(ThreadStatus st) { status = st; }
@@ -119,11 +123,11 @@ class Thread {
     void StackAllocate(VoidFunctionPtr func, void *arg);
     				// Allocate a stack for thread.
 				// Used internally by Fork()
-
+   map<int,int> perthreadTable;
 // A thread running a user program actually has *two* sets of CPU registers -- 
 // one for its state while executing user code, one for its state 
 // while executing kernel code.
-
+    int fdPosition;
     int userRegisters[NumTotalRegs];	// user-level CPU register state
 
   public:

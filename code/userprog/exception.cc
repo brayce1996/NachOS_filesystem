@@ -129,9 +129,12 @@ ExceptionHandler(ExceptionType which)
 					{
 						char *filename = &(kernel->machine->mainMemory[val]);
 						OpenFileId fd = (OpenFileId)SysOpen(filename);
-					  DEBUG(dbgMp4, "SC_Open: open file fd="<<fd);
-					val = kernel->machine->ReadRegister(4);
-						kernel->machine->WriteRegister(2, fd);
+            OpenFileId fd_t = -1;
+            if (kernel->currentThread->GetAvlEntry(&fd_t)&&(fd_t!=-1))
+              kernel->currentThread->SetOpFileTable(fd,fd_t);
+					  DEBUG(dbgMp4, "SC_Open: open file fd="<<fd<<",  User Space thread:"<<fd_t);
+					 //val = kernel->machine->ReadRegister(4);
+						kernel->machine->WriteRegister(2, fd_t);
 					}
 					kernel->machine->WriteRegister(PrevPCReg, kernel->machine->ReadRegister(PCReg));
 					kernel->machine->WriteRegister(PCReg, kernel->machine->ReadRegister(PCReg) + 4);
@@ -147,7 +150,8 @@ ExceptionHandler(ExceptionType which)
 						char *buf       =  &(kernel->machine->mainMemory[val]);
 						int nByes       =  kernel->machine->ReadRegister(5);
 						OpenFileId  fId =  (OpenFileId)(kernel->machine->ReadRegister(6));
-						int  writeByes  =  SysWrite(buf,nByes, fId);
+            OpenFileId  fdsys = (OpenFileId)(kernel->currentThread->GetOpFileTable(fId));
+						int  writeByes  =  SysWrite(buf,nByes, fdsys);
 						kernel->machine->WriteRegister(2, writeByes);
 					}
 					kernel->machine->WriteRegister(PrevPCReg, kernel->machine->ReadRegister(PCReg));
@@ -164,8 +168,9 @@ ExceptionHandler(ExceptionType which)
 						char *buf       =  &(kernel->machine->mainMemory[val]);		// read arguments from memory 
 						int nBytes      =  kernel->machine->ReadRegister(5);
 						OpenFileId  fId =  (OpenFileId)(kernel->machine->ReadRegister(6));
+            OpenFileId  fdsys = (OpenFileId)(kernel->currentThread->GetOpFileTable(fId));
 
-						int  readBytes  =  SysRead(buf,nBytes, fId);	//call ksyscall.h
+						int  readBytes  =  SysRead(buf,nBytes, fdsys);	//call ksyscall.h
 						kernel->machine->WriteRegister(2, readBytes);
 					}
 					kernel->machine->WriteRegister(PrevPCReg, kernel->machine->ReadRegister(PCReg));
@@ -192,7 +197,10 @@ ExceptionHandler(ExceptionType which)
 				case SC_Close:
 					{
 						OpenFileId fid = kernel->machine->ReadRegister(4);
-						status = SysClose(fid);
+            OpenFileId fdsys = (OpenFileId)(kernel->currentThread->GetOpFileTable(fid));
+            
+              kernel->currentThread->SetOpFileTable(-1,fid);
+						status = SysClose(fdsys);
 						kernel->machine->WriteRegister(2, status);
 					}
 					kernel->machine->WriteRegister(PrevPCReg, kernel->machine->ReadRegister(PCReg));

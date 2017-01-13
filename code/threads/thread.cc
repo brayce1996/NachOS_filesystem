@@ -46,6 +46,10 @@ Thread::Thread(char* threadName, int threadID)
 					// of machine registers
     }
     space = NULL;
+    for(int i=1;i<=THREAD_MAX_OPEN_FILE_NUM;i++)
+    {
+        perthreadTable[i]=-1;
+    }
 }
 
 //----------------------------------------------------------------------
@@ -255,6 +259,38 @@ Thread::Sleep (bool finishing)
     kernel->scheduler->Run(nextThread, finishing); 
 }
 
+bool
+Thread::GetAvlEntry(int *fdout)
+{
+     int fd = fdPosition;
+     int i = 1;
+     int opFd = -1;
+     while(i<=THREAD_MAX_OPEN_FILE_NUM){
+         fd = (fd+i)%(THREAD_MAX_OPEN_FILE_NUM+1);
+         opFd = perthreadTable[fd];
+         if(opFd==-1){
+             *fdout = fd;
+             fdPosition = (fd+1);// assume next one is free
+             return TRUE;
+         }
+         i++;
+     }
+     return FALSE;
+}
+
+int 
+Thread::SetOpFileTable(int fdSys,int fdThread)
+{
+    perthreadTable[fdThread]=fdSys;
+
+    return fdSys;
+}
+
+int 
+Thread::GetOpFileTable(int fdThread)
+{
+    return perthreadTable[fdThread];
+}
 //----------------------------------------------------------------------
 // ThreadBegin, ThreadFinish,  ThreadPrint
 //	Dummy functions because C++ does not (easily) allow pointers to member

@@ -17,9 +17,10 @@
 #include "disk.h"
 #include "pbitmap.h"
 
-#define NumDirect 	((SectorSize -  4*sizeof(int)) / sizeof(int))
+#define NumDirect 	((SectorSize -  5*sizeof(int)) / sizeof(int))
 #define NumInDirect  ((SectorSize)/sizeof(int))
-#define MaxFileSize 	(NumDirect * NumInDirect * SectorSize)
+//#define MaxFileSize 	(NumDirect * NumInDirect * NumInDirect * NumInDirect * SectorSize)
+#define MaxFileSize 	(NumDirect * NumInDirect * NumInDirect * NumInDirect * SectorSize)
 // The following class defines the Nachos "file header" (in UNIX terms,  
 // the "i-node"), describing where on disk to find all of the data in the file.
 // The file header is organized as a simple table of pointers to
@@ -65,6 +66,8 @@ class FileHeader {
     int GetFd();
     int SetFd(int fd);
     void Print();			// Print the contents of the file.
+    bool AllocSector(PersistentBitmap *freeMap, int n, indirectTable *tbl, int needSecNum);
+   bool DeallocSector(PersistentBitmap *freeMap, int n, indirectTable *tbl, int *deallocSecNum, int needSecNum);
 
   private:
 	
@@ -86,9 +89,11 @@ class FileHeader {
     int numBytes;			// Number of bytes in the file
     int numSectors;			// Number of data sectors in the file
     int fileDescriptor;
+    int numLevel;
+    int allocSecNum;
+    //int numInDir;
     int dataSectors[NumDirect];		// Disk sector numbers for each data 
     //indirectTable *indirTable;
-    int numInDir;
 					// block in the file
 };
 

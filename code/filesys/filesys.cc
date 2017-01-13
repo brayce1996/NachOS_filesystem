@@ -123,8 +123,9 @@ FileSystem::FileSystem(bool format)
 		// to hold the file data for the directory and bitmap.
 
 		DEBUG(dbgFile, "Writing bitmap and directory back to disk.");
-		freeMap->WriteBack(freeMapFile);	 // flush changes to disk
-		directory->WriteBack(directoryFile);
+		freeMap->WriteBack(freeMapFile);	 // flush change
+		
+    directory->WriteBack(directoryFile);
 
 		if (debug->IsEnabled('f')) {
 			freeMap->Print();
