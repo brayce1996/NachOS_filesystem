@@ -23,6 +23,7 @@
 #include "utility.h"
 #include "filehdr.h"
 #include "directory.h"
+#define NumDirEntries       10
 
 //----------------------------------------------------------------------
 // Directory::Directory
@@ -176,6 +177,29 @@ Directory::List()
 	if (table[i].inUse)
 	    printf("%s\n", table[i].name);
 }
+
+void Directory::List(int level)
+{
+    for (int i = 0; i < tableSize; i++)
+        if (table[i].inUse){
+            for(int j = 0;j<level;j++)  printf("  "); //two space
+            
+            printf("%s\n", table[i].name);
+            if(IsDir(table[i].name)) {
+                OpenFile * subDirFile = new OpenFile(table[i].sector);
+                Directory * subDir = new Directory(NumDirEntries);
+                subDir->FetchFrom(subDirFile);
+                subDir->List(level+1);
+                delete subDir;
+                delete subDirFile;
+            }
+        }
+}
+
+bool Directory::IsDir(char* name){
+    return (name[strlen(name)-1] == '/');
+}
+
 
 //----------------------------------------------------------------------
 // Directory::Print

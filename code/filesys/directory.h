@@ -67,6 +67,8 @@ class Directory {
 
     void List();			// Print the names of all the files
 					//  in the directory
+    void List(int level); //recursive list.
+    bool IsDir(char* name);
     void Print();			// Verbose print of the contents
 					//  of the directory -- all the file
 					//  names and their contents.

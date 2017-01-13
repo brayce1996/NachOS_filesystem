@@ -216,6 +216,14 @@ FileSystem::Create(char *name, int initialSize)
 				// everthing worked, flush all changes back to disk
 				hdr->WriteBack(sector);
 				directory->WriteBack(dirFile);
+				if(IsDir(name)){	//format subdir
+					OpenFile * newDirFile = new OpenFile(sector);
+					Directory * newDir = new Directory(NumDirEntries);
+
+					newDir->WriteBack(newDirFile); // write back a empty table to the dir file = format
+					delete newDir;
+					delete newDirFile;
+				}
 				if(dirFile != directoryFile) delete dirFile; //root dir file should keep opening
 
 				freeMap->WriteBack(freeMapFile);
@@ -326,13 +334,14 @@ FileSystem::List()
 }
 
 	void
-FileSystem::List(char* path)
+FileSystem::List(char* path,bool recursiveListFlag)
 {
 	Directory *directory = new Directory(NumDirEntries);
 	OpenFile * dirFile = GoDirectory(&path);
 	directory->FetchFrom(dirFile);
 	if(dirFile!=directoryFile) delete dirFile;
-	directory->List();
+	if(recursiveListFlag) directory->List(0);
+	else directory->List();
 	delete directory;
 }
 //----------------------------------------------------------------------

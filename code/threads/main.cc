@@ -318,7 +318,7 @@ main(int argc, char **argv)
 		kernel->fileSystem->Print();
     }
     if (dirListFlag) {
-		kernel->fileSystem->List(listDirectoryName);
+		kernel->fileSystem->List(listDirectoryName,recursiveListFlag);
     }
 	if (mkdirFlag) {
 		// MP4 mod tag
