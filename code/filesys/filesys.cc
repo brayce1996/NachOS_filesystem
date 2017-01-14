@@ -498,7 +498,7 @@ void FileSystem::CleanQueue(std::vector<char*>& queue){
 OpenFile * FileSystem::GoDirectory(char** name){
 	std::vector<char*> pathQueue;
 	PreprocessPath(*name,pathQueue);
-	delete [] *name; //delete the input string (which is the absolute path)	
+	//delete [] *name; //delete the input string (which is the absolute path)	
 	OpenFile * dirFile = NULL;
 	Directory* directory = new Directory(NumDirEntries);
 
