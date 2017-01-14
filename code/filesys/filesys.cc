@@ -313,7 +313,9 @@ FileSystem::Remove(char *name)
 	int sector;
 
 	directory = new Directory(NumDirEntries);
-	directory->FetchFrom(directoryFile);
+	OpenFile* dirFile = GoDirectory(&name);
+	directory->FetchFrom(dirFile);
+
 	sector = directory->Find(name);
 	if (sector == -1) {
 		delete directory;
@@ -329,7 +331,10 @@ FileSystem::Remove(char *name)
 	directory->Remove(name);
 
 	freeMap->WriteBack(freeMapFile);		// flush to disk
-	directory->WriteBack(directoryFile);        // flush to disk
+	directory->WriteBack(dirFile);        // flush to disk
+
+	if(dirFile != directoryFile) delete dirFile; //root dir file should keep opening
+	delete [] name;
 	delete fileHdr;
 	delete directory;
 	delete freeMap;
