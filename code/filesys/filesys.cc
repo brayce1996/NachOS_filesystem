@@ -87,7 +87,7 @@ FileSystem::FileSystem(bool format)
 		Directory *directory = new Directory(NumDirEntries);
 		FileHeader *mapHdr = new FileHeader;
 		FileHeader *dirHdr = new FileHeader;
-    int i = 0;
+		int i = 0;
 		DEBUG(dbgFile, "Formatting the file system.");
 
 		// First, allocate space for FileHeaders for the directory and bitmap
@@ -125,17 +125,17 @@ FileSystem::FileSystem(bool format)
 
 		DEBUG(dbgFile, "Writing bitmap and directory back to disk.");
 		freeMap->WriteBack(freeMapFile);	 // flush change
-		
-    directory->WriteBack(directoryFile);
+
+		directory->WriteBack(directoryFile);
 
 		if (debug->IsEnabled('f')) {
 			freeMap->Print();
 			directory->Print();
 		}
-    /*
-    for(i=0;i<SYS_MAX_OPEN_FILE_NUM;i++){
-      sysOpenFileTable[i] = NULL;
-    }*/
+		/*
+		   for(i=0;i<SYS_MAX_OPEN_FILE_NUM;i++){
+		   sysOpenFileTable[i] = NULL;
+		   }*/
 		delete freeMap; 
 		delete directory; 
 		delete mapHdr; 
@@ -237,7 +237,7 @@ FileSystem::Create(char *name, int initialSize)
 		}
 		delete freeMap;
 	}
-
+	delete [] name;
 	delete directory;
 	return success;
 }
@@ -252,13 +252,13 @@ FileSystem::Create(char *name, int initialSize)
 //	"name" -- the text name of the file to be opened
 //----------------------------------------------------------------------
 
-OpenFile *
+	OpenFile *
 FileSystem::Open(char *name)
 { 
 	Directory *directory = new Directory(NumDirEntries);
 	OpenFile *openFile = NULL;
 	int sector;
-  int fd = -1;
+	int fd = -1;
 	DEBUG(dbgFile, "Opening file" << name);
 
 
@@ -268,24 +268,25 @@ FileSystem::Open(char *name)
 
 	if(name==NULL || IsDir(name)) {
 		std::cout<<"FileSystem::Open : Bad open path."<<std::endl;
-		if(name!=NULL) delete name;
+		if(name!=NULL) delete [] name;
 		return NULL;
 	}
 	sector = directory->Find(name); 
-  // TODO: allocate a new entry in system-wide table[done]
+	// TODO: allocate a new entry in system-wide table[done]
 	if (sector >= 0){		
 
 		openFile = new OpenFile(sector);	// name was found in directory 
-    if(GetSysFd(&fd)){
-       openFile->SetFd(fd);
-       DEBUG(dbgMp4, "Open file in FileSystem::Open,"<< "name="<<name<<",fd="<<fd);
-    }
-    else{
-        delete openFile;
-        openFile = NULL;
-    }
-  }
-  delete directory;
+		if(GetSysFd(&fd)){
+			openFile->SetFd(fd);
+			DEBUG(dbgMp4, "Open file in FileSystem::Open,"<< "name="<<name<<",fd="<<fd);
+		}
+		else{
+			delete openFile;
+			openFile = NULL;
+		}
+	}
+	delete [] name;
+	delete directory;
 	return openFile;				// return NULL if not found
 }
 
@@ -399,24 +400,24 @@ FileSystem::Print()
 
 int 
 FileSystem::Read(char *buf, int size, int fd){
-  OpenFile *opFile = GetOpenFileTable(fd);
-  
-  if(opFile){
-     return opFile->Read(buf,size);
-  }
+	OpenFile *opFile = GetOpenFileTable(fd);
+
+	if(opFile){
+		return opFile->Read(buf,size);
+	}
 	return -1;
 }
 
 int 
 FileSystem::Write(char *buf, int size, int fd){
-	  
-  OpenFile *opFile = GetOpenFileTable(fd);
-  
-  if(opFile){
-     return opFile->Write(buf,size);
-  }
 
-  return -1;
+	OpenFile *opFile = GetOpenFileTable(fd);
+
+	if(opFile){
+		return opFile->Write(buf,size);
+	}
+
+	return -1;
 }
 
 int 
@@ -426,41 +427,41 @@ FileSystem::Seek(int position,int fd){
 
 int 
 FileSystem::Close(int fd){
-  
-  OpenFile *opFile = GetOpenFileTable(fd);
-  
-  //SetOpenFileTable(fd,NULL);
-  sysOpFileTable.erase(fd);
-  delete opFile;
+
+	OpenFile *opFile = GetOpenFileTable(fd);
+
+	//SetOpenFileTable(fd,NULL);
+	sysOpFileTable.erase(fd);
+	delete opFile;
 	return 1;
 }
 
 bool FileSystem::GetSysFd(int *fdout){
 
-     int i = 0;
-     int fd = fdPosition;
-     OpenFile *opFile = NULL;
-     while(i<SYS_MAX_OPEN_FILE_NUM){
-         fd = (fd+i)%SYS_MAX_OPEN_FILE_NUM;
-         opFile = sysOpFileTable[fd];
-         if(opFile==NULL){
-             *fdout = fd;
-             fdPosition = (fd+1);// assume next one is free
-             return TRUE;
-         }
-         i++;
-     }
+	int i = 0;
+	int fd = fdPosition;
+	OpenFile *opFile = NULL;
+	while(i<SYS_MAX_OPEN_FILE_NUM){
+		fd = (fd+i)%SYS_MAX_OPEN_FILE_NUM;
+		opFile = sysOpFileTable[fd];
+		if(opFile==NULL){
+			*fdout = fd;
+			fdPosition = (fd+1);// assume next one is free
+			return TRUE;
+		}
+		i++;
+	}
 
-     return FALSE;
+	return FALSE;
 }
 
 void FileSystem::SetOpenFileTable(int fd, OpenFile *openFile){
-      sysOpFileTable[fd] = openFile;
+	sysOpFileTable[fd] = openFile;
 }
 
 OpenFile* FileSystem::GetOpenFileTable(int fd){
-     
-     return sysOpFileTable[fd];
+
+	return sysOpFileTable[fd];
 }
 
 std::vector<char*>& FileSystem::PreprocessPath(char* path, std::vector<char*>& pathQueue){
@@ -490,13 +491,14 @@ void FileSystem::CleanQueue(std::vector<char*>& queue){
 	while(!queue.empty()){
 		char * toBeDelete = queue.front();
 		queue.erase(queue.begin());
-		delete toBeDelete;
+		delete [] toBeDelete;
 	}
 }
 
 OpenFile * FileSystem::GoDirectory(char** name){
 	std::vector<char*> pathQueue;
 	PreprocessPath(*name,pathQueue);
+	delete [] *name; //delete the input string (which is the absolute path)	
 	OpenFile * dirFile = NULL;
 	Directory* directory = new Directory(NumDirEntries);
 
@@ -511,8 +513,8 @@ OpenFile * FileSystem::GoDirectory(char** name){
 			int subDirSector = directory->Find(*name);
 			if(subDirSector==-1) {
 				ASSERT(pathQueue.empty());		//this dir is not exist,
-												// and the path access it's child
-												// bad request, terminate the system.
+				// and the path access it's child
+				// bad request, terminate the system.
 				break; //not exist, going to be create.
 			}
 			if(dirFile != directoryFile) delete dirFile;	// delete last dir file
@@ -523,8 +525,10 @@ OpenFile * FileSystem::GoDirectory(char** name){
 			ASSERT(pathQueue.empty());	// path should be the last file
 			break;
 		}
-		delete *name;
+		delete [] *name;
 	}
+	delete directory;
+
 	return dirFile;
 }
 
