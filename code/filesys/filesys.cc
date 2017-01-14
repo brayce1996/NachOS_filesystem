@@ -303,14 +303,21 @@ FileSystem::Open(char *name)
 //
 //	"name" -- the text name of the file to be removed
 //----------------------------------------------------------------------
+bool
+FileSystem::Remove(char *name){
+	return Remove(name,false);
+}
+
+
 
 	bool
-FileSystem::Remove(char *name)
+FileSystem::Remove(char *name,bool recurRemoveFlag)
 { 
 	Directory *directory;
 	PersistentBitmap *freeMap;
 	FileHeader *fileHdr;
 	int sector;
+	bool success = TRUE;
 
 	directory = new Directory(NumDirEntries);
 	OpenFile* dirFile = GoDirectory(&name);
@@ -321,10 +328,23 @@ FileSystem::Remove(char *name)
 		delete directory;
 		return FALSE;			 // file not found 
 	}
+
+	freeMap = new PersistentBitmap(freeMapFile,NumSectors);
+
+	if(recurRemoveFlag && IsDir(name)){
+		Directory *subDir = new Directory(NumDirEntries);
+		OpenFile * subDirFile = new OpenFile(sector);
+		subDir->FetchFrom(subDirFile);
+
+		success &= subDir->RecRemove(freeMap);
+        subDir->WriteBack(subDirFile);  // not nessery
+		delete subDirFile;
+		delete subDir;
+	}
+
 	fileHdr = new FileHeader;
 	fileHdr->FetchFrom(sector);
 
-	freeMap = new PersistentBitmap(freeMapFile,NumSectors);
 
 	fileHdr->Deallocate(freeMap);  		// remove data blocks
 	freeMap->Clear(sector);			// remove header block
@@ -338,7 +358,8 @@ FileSystem::Remove(char *name)
 	delete fileHdr;
 	delete directory;
 	delete freeMap;
-	return TRUE;
+
+	return success;
 } 
 
 //----------------------------------------------------------------------
@@ -520,15 +541,17 @@ OpenFile * FileSystem::GoDirectory(char** name){
 				ASSERT(pathQueue.empty());		//this dir is not exist,
 				// and the path access it's child
 				// bad request, terminate the system.
-				break; //not exist, going to be create.
+				break; //not exist, going to be create a dir.
 			}
+			if(pathQueue.empty()) break; // no create , just need to find the directory (ex: Remove)
+
 			if(dirFile != directoryFile) delete dirFile;	// delete last dir file
 			// BUT! if last dir is root , do nothing.
 			dirFile = new OpenFile(subDirSector);
 			directory->FetchFrom(dirFile);
 		}else{	//this is a file
 			ASSERT(pathQueue.empty());	// path should be the last file
-			break;
+			break; // going to create a file
 		}
 		delete [] *name;
 	}

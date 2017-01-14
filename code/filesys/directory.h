@@ -64,6 +64,8 @@ class Directory {
     bool Add(char *name, int newSector);  // Add a file name into the directory
 
     bool Remove(char *name);		// Remove a file from the directory
+    bool RecRemove(PersistentBitmap *freeMap);
+
 
     void List();			// Print the names of all the files
 					//  in the directory

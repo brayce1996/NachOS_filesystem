@@ -160,9 +160,40 @@ Directory::Remove(char *name)
     int i = FindIndex(name);
 
     if (i == -1)
-	return FALSE; 		// name not in directory
+	   return FALSE; 		// name not in directory
+
     table[i].inUse = FALSE;
     return TRUE;	
+}
+
+bool Directory::RecRemove(PersistentBitmap *freeMap)
+{
+    bool success = TRUE;
+
+    for(int i=0;i<tableSize;i++){
+        if(table[i].inUse){
+            if(IsDir(table[i].name)){
+                Directory *subDir = new Directory(NumDirEntries);
+                OpenFile * subDirFile = new OpenFile(table[i].sector);
+                subDir->FetchFrom(subDirFile);
+
+                success &= subDir->RecRemove(freeMap);
+                subDir->WriteBack(subDirFile);  // not nessery
+                delete subDirFile;
+                delete subDir;
+            }   
+            FileHeader *fileHdr = new FileHeader;
+            fileHdr->FetchFrom(table[i].sector);
+
+            fileHdr->Deallocate(freeMap);       // remove data blocks
+            freeMap->Clear(table[i].sector);         // remove header block
+            
+            table[i].inUse = FALSE;
+
+            delete fileHdr;
+        }
+    }
+    return success;
 }
 
 //----------------------------------------------------------------------
@@ -182,7 +213,7 @@ void Directory::List(int level)
 {
     for (int i = 0; i < tableSize; i++)
         if (table[i].inUse){
-            for(int j = 0;j<level;j++)  printf("  "); //two space
+            for(int j = 0;j<level;j++)  printf("    "); //two space
             
             printf("%s\n", table[i].name);
             if(IsDir(table[i].name)) {
