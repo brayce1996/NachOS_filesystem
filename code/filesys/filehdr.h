@@ -17,7 +17,7 @@
 #include "disk.h"
 #include "pbitmap.h"
 
-#define NumDirect 	((SectorSize -  5*sizeof(int)) / sizeof(int))
+#define NumDirect 	((SectorSize -  4*sizeof(int)) / sizeof(int))
 #define NumInDirect  ((SectorSize)/sizeof(int))
 //#define MaxFileSize 	(NumDirect * NumInDirect * NumInDirect * NumInDirect * SectorSize)
 #define MaxFileSize 	(NumDirect * NumInDirect * NumInDirect * NumInDirect * SectorSize)
@@ -66,7 +66,7 @@ class FileHeader {
     int GetFd();
     int SetFd(int fd);
     void Print();			// Print the contents of the file.
-    bool AllocSector(PersistentBitmap *freeMap, int n, indirectTable *tbl, int needSecNum);
+    bool AllocSector(PersistentBitmap *freeMap, int n, indirectTable *tbl,int *allocSecNum, int needSecNum);
    bool DeallocSector(PersistentBitmap *freeMap, int n, indirectTable *tbl, int *deallocSecNum, int needSecNum);
 
   private:
@@ -90,7 +90,7 @@ class FileHeader {
     int numSectors;			// Number of data sectors in the file
     int fileDescriptor;
     int numLevel;
-    int allocSecNum;
+    //int allocSecNum;
     //int numInDir;
     int dataSectors[NumDirect];		// Disk sector numbers for each data 
     //indirectTable *indirTable;

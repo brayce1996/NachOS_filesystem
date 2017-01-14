@@ -40,7 +40,6 @@ FileHeader::FileHeader()
 {
 	numBytes = -1;
 	numSectors = -1;
-  allocSecNum = 0;
         fileDescriptor=-1;
         numLevel = 0;
 	memset(dataSectors, -1, sizeof(dataSectors));
@@ -72,8 +71,9 @@ FileHeader::~FileHeader()
 bool
 FileHeader::Allocate(PersistentBitmap *freeMap, int fileSize)
 { 
-    numBytes     = fileSize;
-    numSectors   = divRoundUp(fileSize, SectorSize);
+    numBytes        = fileSize;
+    numSectors      = divRoundUp(fileSize, SectorSize);
+    int allocSecNum = 0;
     if (freeMap->NumClear() < numSectors)
 	      return FALSE;		// not enough space
 		DEBUG(dbgFile, "numSectors = "<< numSectors);
@@ -83,7 +83,7 @@ FileHeader::Allocate(PersistentBitmap *freeMap, int fileSize)
 	  dataSectors[0] = freeMap->FindAndSet();
     numLevel = (int)(log10(numSectors)/log10(32))+1; //see how many indirect level file need
 		DEBUG(dbgFile, "nLevel = "<<numLevel<<", allocSecNum="<<allocSecNum);
-    AllocSector(freeMap, numLevel, indirTbl, numSectors);
+    AllocSector(freeMap, numLevel, indirTbl, &allocSecNum, numSectors);
     kernel->synchDisk->WriteSector(dataSectors[0], (char *)indirTbl); 
     delete indirTbl;
     return TRUE;
@@ -258,7 +258,6 @@ FileHeader::ByteToSector(int offset)
 
   sector = GetSector(offset/SectorSize,pow(NumInDirect,numLevel-1),indirTbl);
   
-  DEBUG(dbgFile, "[GetSector] return sector = "<< sector);
   delete indirTbl;
   /*
   if(numInDir>0){
@@ -343,26 +342,26 @@ FileHeader::Print()
 
 
 bool
-FileHeader::AllocSector(PersistentBitmap *freeMap, int n, indirectTable *tbl, int needSecNum)
+FileHeader::AllocSector(PersistentBitmap *freeMap, int n, indirectTable *tbl,int *allocSecNum, int needSecNum)
 { 
-    if(n<=0||(allocSecNum==needSecNum)) return FALSE;
+    if(n<=0||((*allocSecNum)==needSecNum)) return FALSE;
     n--;
     indirectTable *indirTbl = NULL;;
-    for(int i=0;(i<NumInDirect)&&(allocSecNum<needSecNum);i++){
+    for(int i=0;(i<NumInDirect)&&((*allocSecNum)<needSecNum);i++){
         tbl->dataSectors[i]=freeMap->FindAndSet();
 		    DEBUG(dbgFile, "i="<<i<<",Alloc sectors = "<<tbl->dataSectors[i]<<",n="<<n);
         indirTbl = new indirectTable;
 	      memset(indirTbl, -1, sizeof(indirectTable));  // dummy operation to keep valgrind happy
-        if(AllocSector(freeMap,n,indirTbl,needSecNum)){
+        if(AllocSector(freeMap,n,indirTbl,allocSecNum,needSecNum)){
             kernel->synchDisk->WriteSector(tbl->dataSectors[i], (char *)indirTbl);
         }
         else{
-          if(allocSecNum<needSecNum){ 
-            allocSecNum++;
+          if((*allocSecNum)<needSecNum){ 
+            (*allocSecNum)++;
           }
         }
         
-		    DEBUG(dbgFile, "allocSecNum = "<< allocSecNum);
+		    DEBUG(dbgFile, "allocSecNum = "<< (*allocSecNum));
         delete indirTbl;
     }
     return TRUE;
@@ -379,13 +378,18 @@ FileHeader::DeallocSector(PersistentBitmap *freeMap, int n, indirectTable *tbl, 
 	  memset(indirTbl, -1, sizeof(indirectTable));  // dummy operation to keep valgrind happy
 
 
-    for(int i=0;(i<NumInDirect)&&(*deallocSecNum<needSecNum);i++)
+    for(int i=0;(i<NumInDirect)&&((*deallocSecNum)<needSecNum);i++)
     {
       kernel->synchDisk->ReadSector(tbl->dataSectors[i], (char *)indirTbl);
-      if(!DeallocSector(freeMap,n,indirTbl,deallocSecNum, needSecNum))
-        *deallocSecNum;
-      freeMap->Clear((int) indirTbl->dataSectors[i]);
+      if(!DeallocSector(freeMap,n,indirTbl,deallocSecNum, needSecNum)){
+        (*deallocSecNum)++;
+		    DEBUG(dbgFile, "i="<<i<<", deAlloc Sector= "<<(*deallocSecNum)<<",n="<<n);
+
+      }
+      freeMap->Clear((int) tbl->dataSectors[i]);
     }
+
+		    DEBUG(dbgFile, "total Sector Num="<<needSecNum);
     delete indirTbl;
     
     return TRUE;
