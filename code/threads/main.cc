@@ -249,12 +249,14 @@ main(int argc, char **argv)
 	else if (strcmp(argv[i], "-r") == 0) {
 	    ASSERT(i + 1 < argc);
 	    removeFileName = argv[i + 1];
+        removeFileName = TransferName(removeFileName);
 	    i++;
 	}
 	else if (strcmp(argv[i], "-rr") == 0) {
 		// MP4 mod tag
 		ASSERT(i + 1 < argc);
 		removeFileName = argv[i + 1];
+        removeFileName = TransferName(removeFileName);
 		recursiveRemoveFlag = true;
 		i++;
 	}

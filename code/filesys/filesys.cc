@@ -382,9 +382,24 @@ FileSystem::List(char* path,bool recursiveListFlag)
 	Directory *directory = new Directory(NumDirEntries);
 	OpenFile * dirFile = GoDirectory(&path);
 	directory->FetchFrom(dirFile);
-	if(dirFile!=directoryFile) delete dirFile;
 	if(recursiveListFlag) directory->List(0);
-	else directory->List();
+	else {
+		if(dirFile==directoryFile && !IsDir(path)){
+			directory->List();
+			return;
+		}
+
+		// open the sub-dir and list it
+		char * name = path;
+		Directory * subDir = new Directory(NumDirEntries);
+		OpenFile * subDirFile = new OpenFile(directory->Find(name));
+		subDir->FetchFrom(subDirFile);
+
+		subDir->List();
+		delete subDir;
+		delete subDirFile;
+	}
+	if(dirFile!=directoryFile) delete dirFile;
 	delete directory;
 }
 //----------------------------------------------------------------------
